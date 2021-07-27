@@ -2,12 +2,13 @@
 
  import android.os.Bundle;
  import android.view.View;
+ import android.widget.AdapterView;
+ import android.widget.ArrayAdapter;
  import android.widget.Button;
  import android.widget.ListView;
  import android.widget.Switch;
  import android.widget.TextView;
 
- import android.database.sqlite.SQLiteDatabase;
  import android.widget.Toast;
 
  import androidx.appcompat.app.AppCompatActivity;
@@ -19,6 +20,9 @@
      Button btnViewAll;
      Button btnAdd;
      ListView lstCustomers;
+
+     DatabaseHelper dataBaseHelper;
+     ArrayAdapter customerArrayAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -32,30 +36,62 @@
         btnAdd = findViewById(R.id.btnAdd);
         lstCustomers = findViewById(R.id.lstCustomers);
 
+        dataBaseHelper = new DatabaseHelper(this);
+
+        updateListView(dataBaseHelper);
+
         btnViewAll.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-
+                viewAllCustomers();
             }
         });
 
         btnAdd.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                addNewUser();
+                addNewCustomer();
+            }
+        });
+
+        lstCustomers.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                deleteCustomer(position);
             }
         });
     }
 
-     private void addNewUser() {
-        try {
+     private void updateListView(DatabaseHelper dataBaseHelper) {
+         customerArrayAdapter = new ArrayAdapter<CustomerModel>(this, R.layout.simple_list_item, R.id.textView, dataBaseHelper.getAllCustomers());
+         lstCustomers.setAdapter(customerArrayAdapter);
+     }
 
-            CustomerModel customerModel = new CustomerModel(-1, txtName.getText().toString(),
+     private void viewAllCustomers() {
+         updateListView(dataBaseHelper);
+     }
+
+     private void addNewCustomer() {
+         CustomerModel customerModel;
+
+        try {
+            customerModel = new CustomerModel(-1, txtName.getText().toString(),
                     Integer.parseInt(txtAge.getText().toString()), swtActiveCustomer.isChecked());
             Toast.makeText(this, customerModel.toString(), Toast.LENGTH_SHORT).show();
 
         } catch (Exception e) {
             Toast.makeText(this, "Error creating customer", Toast.LENGTH_SHORT).show();
+            customerModel = new CustomerModel(-1, "error", 0, false);
         }
+
+         boolean success = dataBaseHelper.addOne(customerModel);
+
+         updateListView(dataBaseHelper);
+     }
+
+     private void deleteCustomer(int position) {
+        CustomerModel clickedCustomer = (CustomerModel) lstCustomers.getItemAtPosition(position);
+        dataBaseHelper.deleteCustomer(clickedCustomer);
+        updateListView(dataBaseHelper);
      }
  }
